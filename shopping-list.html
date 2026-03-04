@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="買い物リスト" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>買い物リスト</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; background: #F7F7F5; }
+    body {
+      font-family: 'Yu Gothic','游ゴシック',YuGothic,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;
+      font-weight: 700;
+      -webkit-font-smoothing: antialiased;
+    }
+    input, button {
+      font-family: 'Yu Gothic','游ゴシック',YuGothic,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;
+      font-weight: 700;
+    }
+    input { outline: none; }
+    button { cursor: pointer; border: none; background: none; }
+
+    #app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #F7F7F5;
+    }
+
+    /* ---- TOP BAR ---- */
+    #topbar {
+      background: #fff;
+      border-bottom: 1px solid #E8E8E4;
+      padding: 16px 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .title-left { display: flex; align-items: center; gap: 8px; }
+    .title-emoji { font-size: 22px; }
+    .title-text { font-size: 20px; color: #1A1A1A; letter-spacing: -0.5px; }
+    .title-right { display: flex; align-items: center; gap: 6px; }
+    .count-text { font-size: 12px; color: #999; }
+    #progress-badge {
+      color: #fff;
+      font-size: 12px;
+      padding: 2px 10px;
+      border-radius: 20px;
+      min-width: 42px;
+      text-align: center;
+      transition: background .3s;
+    }
+    #progress-bar-wrap {
+      height: 3px;
+      background: #EEE;
+      border-radius: 2px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    #progress-bar {
+      height: 100%;
+      border-radius: 2px;
+      transition: width .4s ease, background .3s;
+      width: 0%;
+    }
+    .members-row {
+      display: flex;
+      gap: 8px;
+      padding-bottom: 12px;
+    }
+    .member-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 12px;
+      border-radius: 20px;
+      font-size: 15px;
+      border: none;
+      transition: all .15s;
+      color: #666;
+      background: #F2F2F0;
+    }
+    .member-btn.active { color: #fff; }
+
+    /* ---- ADD FORM ---- */
+    #add-area {
+      background: #fff;
+      margin: 12px 12px 0;
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    #add-label {
+      font-size: 11px;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+    #item-name-input {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 10px;
+      border: 1.5px solid #E8E8E4;
+      background: #FAFAFA;
+      font-size: 15px;
+      color: #1A1A1A;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .qty-row { display: flex; gap: 8px; }
+    #item-qty-input {
+      flex: 1;
+      padding: 11px 14px;
+      border-radius: 10px;
+      border: 1.5px solid #E8E8E4;
+      background: #FAFAFA;
+      font-size: 14px;
+      color: #1A1A1A;
+    }
+    #add-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background .2s, box-shadow .2s;
+      line-height: 1;
+    }
+
+    /* ---- FILTER TABS ---- */
+    #filter-tabs {
+      display: flex;
+      margin: 12px 12px 0;
+      background: #EEEEED;
+      border-radius: 12px;
+      padding: 3px;
+      gap: 0;
+    }
+    .filter-btn {
+      flex: 1;
+      padding: 8px 4px;
+      border-radius: 10px;
+      font-size: 13px;
+      border: none;
+      background: transparent;
+      color: #888;
+      transition: all .15s;
+    }
+    .filter-btn.active {
+      background: #fff;
+      color: #1A1A1A;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* ---- ITEMS ---- */
+    #items-list {
+      padding: 10px 12px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .empty-msg {
+      text-align: center;
+      color: #BBB;
+      padding: 48px 0;
+      font-size: 14px;
+    }
+    .item-card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      overflow: hidden;
+      transition: opacity .2s;
+      position: relative;
+    }
+    .item-card.done {
+      box-shadow: none;
+      border: 1.5px solid #EFEFED !important;
+      opacity: 0.6;
+    }
+    .item-inner {
+      display: flex;
+      align-items: center;
+      padding: 12px 12px 12px 16px;
+      gap: 12px;
+    }
+    .item-accent {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      border-radius: 14px 0 0 14px;
+    }
+    .check-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      border: 2px solid #CCC;
+      background: #fff;
+      color: #fff;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all .15s;
+    }
+    .check-btn.checked { background: var(--item-color); border-color: var(--item-color); }
+    .item-body { flex: 1; min-width: 0; }
+    .item-name {
+      font-size: 16px;
+      color: #1A1A1A;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .item-name.done { color: #AAA; text-decoration: line-through; }
+    .item-meta { display: flex; gap: 6px; align-items: center; margin-top: 3px; }
+    .item-qty {
+      font-size: 12px;
+      color: #888;
+      padding: 1px 7px;
+      border-radius: 10px;
+    }
+    .item-qty.done { color: #CCC; background: #F5F5F5 !important; }
+    .item-by { font-size: 11px; }
+    .item-by.done { color: #CCC !important; }
+    .del-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #FFF0F0;
+      color: #E05C5C;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    #clear-btn {
+      margin-top: 8px;
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      background: transparent;
+      border: 1.5px dashed #DDD;
+      color: #BBB;
+      font-size: 13px;
+      display: none;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .slide-in { animation: slideDown 0.2s ease; }
+    @keyframes checkPop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+    .pop { animation: checkPop 0.2s ease; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="title-row">
+      <div class="title-left">
+        <span class="title-emoji">🛒</span>
+        <span class="title-text">買い物リスト</span>
+      </div>
+      <div class="title-right">
+        <span class="count-text" id="count-text">0/0</span>
+        <div id="progress-badge">0%</div>
+      </div>
+    </div>
+    <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+    <div class="members-row" id="members-row"></div>
+  </div>
+
+  <!-- ADD FORM -->
+  <div id="add-area">
+    <div id="add-label">🐼 ゆうきとして追加</div>
+    <input id="item-name-input" type="text" placeholder="商品名を入力..." autocomplete="off" />
+    <div class="qty-row">
+      <input id="item-qty-input" type="text" placeholder="数量（例：2本）" autocomplete="off" />
+      <button id="add-btn">＋</button>
+    </div>
+  </div>
+
+  <!-- FILTER TABS -->
+  <div id="filter-tabs">
+    <button class="filter-btn active" data-filter="all">すべて</button>
+    <button class="filter-btn" data-filter="active">未完了</button>
+    <button class="filter-btn" data-filter="done">完了済み</button>
+  </div>
+
+  <!-- ITEMS -->
+  <div id="items-list">
+    <div class="empty-msg" id="empty-msg" style="display:none"></div>
+    <button id="clear-btn">完了済みを削除（0件）</button>
+  </div>
+
+</div>
+
+<script>
+const USERS = [
+  { id: 1, name: "ゆうき", color: "#E05C5C", avatar: "🐼" },
+  { id: 2, name: "ゆりか", color: "#2AB8A8", avatar: "🦋" },
+];
+
+// --- State ---
+let items = loadItems();
+let currentUserId = 1;
+let filter = "all";
+let editingId = null;
+
+function loadItems() {
+  try {
+    const saved = localStorage.getItem("shopping_items");
+    return saved ? JSON.parse(saved) : [
+      { id: 1, name: "牛乳",  qty: "2本",    done: false, addedBy: "ゆうき", color: "#E05C5C" },
+      { id: 2, name: "たまご", qty: "1パック", done: false, addedBy: "ゆりか", color: "#2AB8A8" },
+      { id: 3, name: "食パン", qty: "1斤",    done: true,  addedBy: "ゆうき", color: "#E05C5C" },
+    ];
+  } catch(e) { return []; }
+}
+function saveItems() {
+  try { localStorage.setItem("shopping_items", JSON.stringify(items)); } catch(e) {}
+}
+function genId() { return Date.now() + Math.random(); }
+function me() { return USERS.find(u => u.id === currentUserId); }
+
+// --- Render ---
+function render() {
+  const user = me();
+  saveItems();
+
+  // Progress
+  const done = items.filter(i => i.done).length;
+  const total = items.length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  document.getElementById("count-text").textContent = done + "/" + total;
+  document.getElementById("progress-badge").textContent = pct + "%";
+  document.getElementById("progress-badge").style.background = user.color;
+  document.getElementById("progress-bar").style.width = pct + "%";
+  document.getElementById("progress-bar").style.background = user.color;
+
+  // Add label
+  document.getElementById("add-label").textContent = user.avatar + " " + user.name + "として追加";
+  document.getElementById("add-label").style.color = user.color;
+  document.getElementById("add-btn").style.background = user.color;
+  document.getElementById("add-btn").style.boxShadow = "0 2px 8px " + user.color + "55";
+
+  // Members
+  const mr = document.getElementById("members-row");
+  mr.innerHTML = "";
+  USERS.forEach(u => {
+    const btn = document.createElement("button");
+    btn.className = "member-btn" + (u.id === currentUserId ? " active" : "");
+    btn.style.background = u.id === currentUserId ? u.color : "#F2F2F0";
+    btn.innerHTML = "<span>" + u.avatar + "</span><span>" + u.name + "</span>";
+    btn.addEventListener("click", () => { currentUserId = u.id; render(); });
+    mr.appendChild(btn);
+  });
+
+  // Filter tabs
+  document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.filter === filter);
+  });
+
+  // Items
+  const filtered = items.filter(i =>
+    filter === "all" ? true : filter === "active" ? !i.done : i.done
+  );
+  const list = document.getElementById("items-list");
+  // Remove old cards
+  list.querySelectorAll(".item-card").forEach(el => el.remove());
+
+  const emptyMsg = document.getElementById("empty-msg");
+  const clearBtn = document.getElementById("clear-btn");
+
+  if (filtered.length === 0) {
+    emptyMsg.style.display = "block";
+    emptyMsg.textContent = filter === "done" ? "完了済みのアイテムはありません" : "アイテムを追加しよう！";
+  } else {
+    emptyMsg.style.display = "none";
+  }
+
+  const doneCnt = items.filter(i => i.done).length;
+  if (doneCnt > 0) {
+    clearBtn.style.display = "block";
+    clearBtn.textContent = "完了済みを削除（" + doneCnt + "件）";
+  } else {
+    clearBtn.style.display = "none";
+  }
+
+  // Insert cards before clearBtn
+  filtered.forEach(item => {
+    const card = buildCard(item);
+    list.insertBefore(card, clearBtn);
+  });
+}
+
+function buildCard(item) {
+  const card = document.createElement("div");
+  card.className = "item-card slide-in" + (item.done ? " done" : "");
+  card.style.border = item.done ? "1.5px solid #EFEFED" : "1.5px solid " + item.color + "22";
+
+  const accent = document.createElement("div");
+  accent.className = "item-accent";
+  accent.style.background = item.done ? "#DDD" : item.color;
+
+  const inner = document.createElement("div");
+  inner.className = "item-inner";
+
+  // Checkbox
+  const chk = document.createElement("button");
+  chk.className = "check-btn" + (item.done ? " checked" : "");
+  chk.style.setProperty("--item-color", item.color);
+  if (item.done) { chk.style.background = item.color; chk.style.borderColor = item.color; }
+  chk.innerHTML = item.done ? "✓" : "";
+  chk.addEventListener("click", () => {
+    item.done = !item.done;
+    chk.classList.add("pop");
+    chk.addEventListener("animationend", () => chk.classList.remove("pop"), { once: true });
+    render();
+  });
+
+  // Body
+  const body = document.createElement("div");
+  body.className = "item-body";
+
+  if (editingId === item.id) {
+    const inp = document.createElement("input");
+    inp.value = item.name;
+    inp.style.cssText = "width:100%;padding:3px 8px;border-radius:6px;border:1.5px solid " + item.color + ";font-size:16px;color:#1A1A1A;background:#fff;font-family:inherit;font-weight:700;outline:none;";
+    inp.addEventListener("keydown", e => {
+      if (e.key === "Enter") { item.name = inp.value.trim() || item.name; editingId = null; render(); }
+      if (e.key === "Escape") { editingId = null; render(); }
+    });
+    inp.addEventListener("blur", () => { item.name = inp.value.trim() || item.name; editingId = null; render(); });
+    body.appendChild(inp);
+    setTimeout(() => inp.focus(), 0);
+  } else {
+    const nameEl = document.createElement("div");
+    nameEl.className = "item-name" + (item.done ? " done" : "");
+    nameEl.textContent = item.name;
+    nameEl.addEventListener("dblclick", () => {
+      if (!item.done) { editingId = item.id; render(); }
+    });
+    // long press for mobile edit
+    let pressTimer;
+    nameEl.addEventListener("touchstart", () => {
+      if (item.done) return;
+      pressTimer = setTimeout(() => { editingId = item.id; render(); }, 600);
+    });
+    nameEl.addEventListener("touchend", () => clearTimeout(pressTimer));
+    nameEl.addEventListener("touchmove", () => clearTimeout(pressTimer));
+    body.appendChild(nameEl);
+  }
+
+  const meta = document.createElement("div");
+  meta.className = "item-meta";
+  const qtyEl = document.createElement("span");
+  qtyEl.className = "item-qty" + (item.done ? " done" : "");
+  qtyEl.textContent = item.qty;
+  if (!item.done) qtyEl.style.background = item.color + "18";
+  const byEl = document.createElement("span");
+  byEl.className = "item-by" + (item.done ? " done" : "");
+  byEl.style.color = item.done ? "#CCC" : item.color + "BB";
+  byEl.textContent = item.addedBy;
+  meta.appendChild(qtyEl);
+  meta.appendChild(byEl);
+  body.appendChild(meta);
+
+  // Delete
+  const del = document.createElement("button");
+  del.className = "del-btn";
+  del.textContent = "✕";
+  del.addEventListener("click", () => {
+    items = items.filter(i => i.id !== item.id);
+    render();
+  });
+
+  inner.appendChild(accent);
+  inner.appendChild(chk);
+  inner.appendChild(body);
+  inner.appendChild(del);
+  card.appendChild(inner);
+  return card;
+}
+
+// --- Events ---
+document.getElementById("add-btn").addEventListener("click", addItem);
+document.getElementById("item-name-input").addEventListener("keydown", e => e.key === "Enter" && addItem());
+document.getElementById("item-qty-input").addEventListener("keydown", e => e.key === "Enter" && addItem());
+
+document.querySelectorAll(".filter-btn").forEach(btn => {
+  btn.addEventListener("click", () => { filter = btn.dataset.filter; render(); });
+});
+
+document.getElementById("clear-btn").addEventListener("click", () => {
+  items = items.filter(i => !i.done);
+  render();
+});
+
+function addItem() {
+  const nameIn = document.getElementById("item-name-input");
+  const qtyIn  = document.getElementById("item-qty-input");
+  const name = nameIn.value.trim();
+  if (!name) { nameIn.focus(); return; }
+  items.push({
+    id: genId(),
+    name,
+    qty: qtyIn.value.trim() || "1個",
+    done: false,
+    addedBy: me().name,
+    color: me().color,
+  });
+  nameIn.value = "";
+  qtyIn.value  = "";
+  nameIn.focus();
+  render();
+}
+
+// Initial render
+render();
+</script>
+</body>
+</html>
